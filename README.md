@@ -158,6 +158,28 @@ or run the `NoteAppApplication` class from your IDE.
 
 ---
 
+## Screenshots
+
+### Create Note
+
+*Coming Soon*
+
+### Retrieve All Notes
+
+*Coming Soon*
+
+### Search Notes
+
+*Coming Soon*
+
+### Pagination
+
+*Coming Soon*
+
+### Validation Error
+
+*Coming Soon*
+
 ## Author
 
 **Harshit Srivastava**
