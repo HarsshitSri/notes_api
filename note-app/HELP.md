@@ -1,31 +1,40 @@
-# Read Me First
-The following was discovered as part of building this project:
+# Notes API — Module Help
 
-* The original package name 'com.Harshit.note-app' is invalid and this project uses 'com.Harshit.note_app' instead.
+Spring Boot application module for the [Notes API](../README.md) project.
 
-# Getting Started
+## Package name
 
-### Reference Documentation
-For further reference, please consider the following sections:
+The Spring Initializr artifact name `com.Harshit.note-app` is not a valid Java package. This module uses `com.Harshit.note_app` instead.
 
-* [Official Apache Maven documentation](https://maven.apache.org/guides/index.html)
-* [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/4.1.0/maven-plugin)
-* [Create an OCI image](https://docs.spring.io/spring-boot/4.1.0/maven-plugin/build-image.html)
-* [Spring Web](https://docs.spring.io/spring-boot/4.1.0/reference/web/servlet.html)
-* [Spring Data JPA](https://docs.spring.io/spring-boot/4.1.0/reference/data/sql.html#data.sql.jpa-and-spring-data)
+## Requirements
 
-### Guides
-The following guides illustrate how to use some features concretely:
+- Java 21
+- Maven 3.8+ (system install; the `.mvn/` wrapper directory is not present in this repository)
+
+## Run locally
+
+From this directory (`note-app/`):
+
+```bash
+# H2 in-memory database (no external DB required)
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
+
+# MySQL (default profile — requires a running MySQL instance)
+mvn spring-boot:run
+```
+
+See the [root README](../README.md) for environment variables, API usage, Docker setup, and testing.
+
+## Reference documentation
+
+* [Apache Maven documentation](https://maven.apache.org/guides/index.html)
+* [Spring Boot 4.1 Maven Plugin](https://docs.spring.io/spring-boot/4.1.0/maven-plugin)
+* [Spring Boot 4.1 — Web](https://docs.spring.io/spring-boot/4.1.0/reference/web/servlet.html)
+* [Spring Boot 4.1 — Spring Data JPA](https://docs.spring.io/spring-boot/4.1.0/reference/data/sql.html#data.sql.jpa-and-spring-data)
+* [Spring Security reference](https://docs.spring.io/spring-security/reference/)
+
+## Guides
 
 * [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
-* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
 * [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
 * [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
-
-### Maven Parent overrides
-
-Due to Maven's design, elements are inherited from the parent POM to the project POM.
-While most of the inheritance is fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent.
-To prevent this, the project POM contains empty overrides for these elements.
-If you manually switch to a different parent and actually want the inheritance, you need to remove those overrides.
-
