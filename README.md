@@ -1,101 +1,137 @@
 # Notes API
 
-A RESTful backend application built using **Java**, **Spring Boot**, **Spring Data JPA (Hibernate)**, and **PostgreSQL**. This project provides APIs to create, retrieve, update, delete, search, and manage notes while demonstrating clean layered architecture, validation, pagination, sorting, and centralized exception handling.
+A RESTful backend application built with **Java 21**, **Spring Boot 4**, **Spring Data JPA (Hibernate)**, and **JWT authentication**. Users can register, log in, and manage personal notes with search, pagination, sorting, validation, and centralized exception handling.
+
+**Repository:** [github.com/HarsshitSri/notes_api](https://github.com/HarsshitSri/notes_api)
 
 ---
 
 ## Features
 
-* Create a new note
-* Retrieve all notes
-* Retrieve a note by ID
-* Update an existing note
-* Delete a note
+* User registration and login with JWT tokens
+* Create, read, update, and delete notes (scoped per authenticated user)
 * Search notes by keyword
-* Pagination support
-* Sorting support
+* Pagination and sorting support
 * Bean Validation using `@Valid`
-* Global Exception Handling with `@RestControllerAdvice`
+* Global exception handling with `@RestControllerAdvice`
 * Automatic `createdAt` and `updatedAt` timestamp management
-* Layered Architecture (Controller → Service → Repository)
+* Swagger / OpenAPI documentation
+* Layered architecture (Controller → Service → Repository)
 
 ---
 
 ## Tech Stack
 
-* **Language:** Java
-* **Framework:** Spring Boot
-* **Database:** MySQL (Docker) / PostgreSQL or H2 (local development & tests)
-* **ORM:** Spring Data JPA (Hibernate)
-* **Build Tool:** Maven
-* **Testing:** JUnit
+| Layer | Technology |
+| ----- | ---------- |
+| Language | Java 21 |
+| Framework | Spring Boot 4.1 |
+| Security | Spring Security + JWT (jjwt) |
+| Database | MySQL (Docker / production), H2 (local dev & tests) |
+| ORM | Spring Data JPA (Hibernate) |
+| API Docs | SpringDoc OpenAPI |
+| Build | Maven |
+| Testing | JUnit 5, Mockito, H2 |
 
 ---
 
 ## Project Structure
 
 ```text
-src
-├── main
-│   ├── java
-│   │   └── com.harshit.note_app
-│   │       ├── controller
-│   │       ├── exception
-│   │       ├── model
-│   │       ├── repository
-│   │       ├── service
-│   │       └── NoteAppApplication.java
-│   └── resources
-│       └── application.properties
-└── test
+notes_api/
+├── docker-compose.yml
+├── README.md
+└── note-app/
+    ├── pom.xml
+    └── src/
+        ├── main/
+        │   ├── java/com/Harshit/note_app/
+        │   │   ├── controller/
+        │   │   ├── service/
+        │   │   ├── repository/
+        │   │   ├── security/
+        │   │   ├── model/
+        │   │   ├── dto/
+        │   │   ├── exception/
+        │   │   └── NoteAppApplication.java
+        │   └── resources/
+        │       ├── application.properties
+        │       └── application-h2.properties
+        └── test/
+            └── resources/application-test.properties
 ```
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint        | Description           |
-| ------ | --------------- | --------------------- |
-| POST   | `/notes`        | Create a new note     |
-| GET    | `/notes`        | Retrieve all notes    |
-| GET    | `/notes/{id}`   | Retrieve a note by ID |
-| PUT    | `/notes/{id}`   | Update a note         |
-| DELETE | `/notes/{id}`   | Delete a note         |
-| GET    | `/notes/search` | Search notes          |
+All note endpoints require a valid JWT token in the `Authorization: Bearer <token>` header.
 
-### Pagination
+### Authentication (public)
+
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
+| POST | `/api/auth/register` | Register a new user |
+| POST | `/api/auth/login` | Log in and receive a JWT token |
+
+### Notes (authenticated)
+
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
+| POST | `/api/notes` | Create a new note |
+| GET | `/api/notes` | List notes (supports search, pagination, sorting) |
+| GET | `/api/notes/{id}` | Get a note by ID |
+| PUT | `/api/notes/{id}` | Update a note |
+| DELETE | `/api/notes/{id}` | Delete a note |
+
+### Pagination & sorting
 
 ```http
-GET /notes?page=0&size=10
-```
-
-### Sorting
-
-```http
-GET /notes?sortBy=updatedAt
+GET /api/notes?page=0&size=10&sortBy=updatedAt
+GET /api/notes?search=spring&page=0&size=10
 ```
 
 ---
 
-## Sample Request
+## Quick Start with H2 (no database setup)
 
-```json
-{
-  "title": "Spring Boot",
-  "content": "Complete the README for the Notes API."
-}
+The fastest way to run the project locally — uses an in-memory H2 database:
+
+```bash
+git clone git@github.com:HarsshitSri/notes_api.git
+cd notes_api/note-app
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
 ```
 
-## Sample Response
+* **API:** http://localhost:8080
+* **Swagger UI:** http://localhost:8080/swagger-ui.html
+* **H2 Console:** http://localhost:8080/h2-console (JDBC URL: `jdbc:h2:mem:notes_db`)
 
-```json
-{
-  "id": 1,
-  "title": "Spring Boot",
-  "content": "Complete the README for the Notes API.",
-  "createdAt": "2026-06-28T10:30:45",
-  "updatedAt": "2026-06-28T10:30:45"
-}
+### Example flow
+
+**1. Register**
+
+```bash
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"demo","email":"demo@example.com","password":"password123"}'
+```
+
+**2. Login**
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@example.com","password":"password123"}'
+```
+
+**3. Create a note** (replace `<token>` with the JWT from login)
+
+```bash
+curl -X POST http://localhost:8080/api/notes \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"title":"Spring Boot","content":"Notes API is running with H2."}'
 ```
 
 ---
@@ -112,19 +148,20 @@ Database settings are read from environment variables. Defaults target a local M
 | `JWT_SECRET` | JWT signing secret (min. 32 characters) | built-in dev default |
 | `JWT_EXPIRATION` | Token lifetime in milliseconds | `86400000` |
 
-Example for local MySQL:
+For local MySQL:
 
-```properties
-SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/notes_db
-SPRING_DATASOURCE_USERNAME=notes_user
-SPRING_DATASOURCE_PASSWORD=notes_pass
+```bash
+export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/notes_db
+export SPRING_DATASOURCE_USERNAME=notes_user
+export SPRING_DATASOURCE_PASSWORD=notes_pass
+cd note-app && mvn spring-boot:run
 ```
 
 ---
 
 ## Running with Docker
 
-The project includes a `Dockerfile` and `docker-compose.yml` that start the Spring Boot API and a MySQL database together. Database data is persisted in a Docker volume.
+The project includes a `Dockerfile` and `docker-compose.yml` that start the Spring Boot API and a MySQL database together.
 
 ### Prerequisites
 
@@ -136,21 +173,16 @@ The project includes a `Dockerfile` and `docker-compose.yml` that start the Spri
 From the project root:
 
 ```bash
+git clone git@github.com:HarsshitSri/notes_api.git
+cd notes_api
+cp .env.example .env   # optional: customize credentials
 docker compose up --build
 ```
-
-The API will be available at:
 
 * **Application:** http://localhost:8080
 * **Swagger UI:** http://localhost:8080/swagger-ui.html
 
 ### Environment variables
-
-Copy the example env file and customize credentials if needed:
-
-```bash
-cp .env.example .env
-```
 
 | Variable | Description | Default |
 | -------- | ----------- | ------- |
@@ -161,60 +193,14 @@ cp .env.example .env
 | `JWT_SECRET` | JWT signing secret | built-in dev default |
 | `JWT_EXPIRATION` | Token lifetime in ms | `86400000` |
 
-Docker Compose passes database credentials to the application container automatically via `SPRING_DATASOURCE_*` variables.
-
 ### Useful commands
 
 ```bash
-# Start in detached mode
-docker compose up --build -d
-
-# View logs
-docker compose logs -f app
-
-# Stop containers
-docker compose down
-
-# Stop containers and remove persisted database volume
-docker compose down -v
+docker compose up --build -d    # start in background
+docker compose logs -f app      # view logs
+docker compose down             # stop containers
+docker compose down -v          # stop and remove database volume
 ```
-
-### Docker architecture
-
-```text
-┌─────────────────────┐       ┌─────────────────────┐
-│   notes-api :8080   │──────▶│   mysql :3306       │
-│   (Spring Boot)     │ JDBC  │   (volume: mysql_data) │
-└─────────────────────┘       └─────────────────────┘
-```
-
----
-
-## Running the Project (without Docker)
-
-### Clone the repository
-
-```bash
-git clone https://github.com/<your-username>/notes-api.git
-```
-
-### Navigate to the project
-
-```bash
-cd notes-api/note-app
-```
-
-### Configure the database
-
-Start MySQL locally (or use your own credentials) and set environment variables, or update defaults in `src/main/resources/application.properties`.
-
-### Run the application
-
-```bash
-mvn spring-boot:run
-```
-
-or run the `NoteAppApplication` class from your IDE.
 
 ---
 
@@ -222,19 +208,18 @@ or run the `NoteAppApplication` class from your IDE.
 
 ```bash
 cd note-app
-mvn test
+mvn clean test
 ```
 
-Integration tests use an in-memory H2 database via the `test` profile.
+Requires **Java 21**. Integration tests use an in-memory H2 database via the `test` profile.
 
 ---
 
-## Future Improvements
+## Requirements
 
-* Rate limiting
-* Refresh tokens
-* Email verification
-* CI/CD pipeline
+* Java 21 (JDK)
+* Maven 3.8+
+* MySQL 8+ (for production / Docker setup) or H2 (for local dev / tests)
 
 ---
 
@@ -248,7 +233,6 @@ Integration tests use an in-memory H2 database via the `test` profile.
 
 ![Retrieve All Notes](images/get-all-notes.png)
 
-
 ### Pagination & Sorting
 
 ![Pagination](images/pagination-and-sorting.png)
@@ -257,7 +241,8 @@ Integration tests use an in-memory H2 database via the `test` profile.
 
 ![Validation Error](images/validation.png)
 
+---
+
 ## Author
 
-**Harshit Srivastava**
-
+**Harsshit Sri** — [github.com/HarsshitSri](https://github.com/HarsshitSri)
