@@ -1,0 +1,23 @@
+# Build
+note-app/target/
+*.jar
+*.war
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+
+# Environment
+.env
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
