@@ -29,7 +29,7 @@ This document records major engineering decisions inferred from the repository: 
 
 ---
 
-## 3. Database — PostgreSQL (initial) → MySQL (current)
+## Database — PostgreSQL ↔ MySQL history → PostgreSQL (current)
 
 ### 3a. PostgreSQL (June 2026, superseded)
 
@@ -40,7 +40,7 @@ This document records major engineering decisions inferred from the repository: 
 | **Alternatives** | None recorded in Git at this stage. |
 | **Tradeoffs** | **Gain:** strong SQL support, common in production tutorials. **Cost:** required a running PostgreSQL instance for local development. |
 
-### 3b. MySQL (July 2026, current default)
+### 3b. MySQL (July 2026, superseded)
 
 | | |
 | --- | --- |
@@ -49,7 +49,16 @@ This document records major engineering decisions inferred from the repository: 
 | **Alternatives** | PostgreSQL (previously used in this same repository). H2 was not chosen for production — only for dev/test profiles. |
 | **Tradeoffs** | **Gain:** Docker Compose provides a self-contained local/prototype deployment; MySQL is widely available. **Cost:** dialect-specific behavior; migration from the earlier PostgreSQL setup required config changes. |
 
-**Note:** The PostgreSQL driver remains declared in `pom.xml` but no `application*.properties` profile uses it. This appears to be a leftover dependency, not an active dual-database design.
+### 3c. PostgreSQL (current default)
+
+| | |
+| --- | --- |
+| **Chosen** | PostgreSQL 16 as the default runtime database (`application.properties`, `docker-compose.yml`) |
+| **Why** | Restored as the active default; PostgreSQL driver was already present in `pom.xml`. Docker Compose runs `postgres:16-alpine` with a health check and persistent volume. |
+| **Alternatives** | MySQL (previous default), H2 for local/dev without containers. |
+| **Tradeoffs** | **Gain:** strong SQL support, matches earlier project history, H2 test URLs already use `MODE=PostgreSQL`. **Cost:** requires a running PostgreSQL instance (or Compose) for the default profile. |
+
+**Note:** The MySQL driver was removed from `pom.xml` when PostgreSQL was restored as the default.
 
 ---
 
@@ -58,9 +67,9 @@ This document records major engineering decisions inferred from the repository: 
 | | |
 | --- | --- |
 | **Chosen** | H2 in-memory database for the `test` profile (`application-test.properties`, `ddl-auto=create-drop`) and the `h2` profile (`application-h2.properties`, `ddl-auto=update`) |
-| **Why** | Added in the July rewrite to run integration tests without external infrastructure (`NotesApiIntegrationTest` uses `@ActiveProfiles("test")`). The `h2` profile (`39ec22c`) enables local runs without MySQL. |
-| **Alternatives** | Testcontainers with MySQL (not present in `pom.xml`). Using MySQL for all environments (rejected for tests — slower, requires external service). |
-| **Tradeoffs** | **Gain:** fast, isolated tests; zero-setup local development with `-Dspring-boot.run.profiles=h2`. **Cost:** H2 SQL semantics differ from MySQL; `MODE=PostgreSQL` is set in H2 URLs to approximate compatibility. Not representative of production MySQL behavior. |
+| **Why** | Added in the July rewrite to run integration tests without external infrastructure (`NotesApiIntegrationTest` uses `@ActiveProfiles("test")`). The `h2` profile (`39ec22c`) enables local runs without PostgreSQL. |
+| **Alternatives** | Testcontainers with PostgreSQL (not present in `pom.xml`). Using PostgreSQL for all environments (rejected for tests — slower, requires external service). |
+| **Tradeoffs** | **Gain:** fast, isolated tests; zero-setup local development with `-Dspring-boot.run.profiles=h2`. **Cost:** H2 SQL semantics differ from PostgreSQL; `MODE=PostgreSQL` is set in H2 URLs to approximate compatibility. |
 
 ---
 
@@ -136,7 +145,7 @@ This document records major engineering decisions inferred from the repository: 
 | --- | --- |
 | **Chosen** | Hand-written `@Component` mapper classes (`UserMapper`, `NoteMapper`) with explicit field assignment |
 | **Why** | Both mappers exist as simple POJO-to-POJO converters. `lombok` is declared in `pom.xml` but **not used** in any `src/main` source file. MapStruct is not a dependency. |
-| **Alternatives** | **MapStruct** (compile-time mapping, not adopted). **Lombok** (`@Builder`, `@Data` — declared but unused). **ModelMapper / MapStruct** — not in `pom.xml`. Inline mapping in services (partially used: `UserService.login()` and `NoteService.updateNote()` bypass the mapper). |
+| **Alternatives** | **MapStruct** (compile-time mapping, not adopted). **Lombok** (removed — was unused). Inline mapping in services (partially used: `UserService.login()` and `NoteService.updateNote()` bypass the mapper). |
 | **Tradeoffs** | **Gain:** no code-generation setup, easy to read, no reflection. **Cost:** verbose; mapping logic is inconsistent (some paths use mapper, others set fields directly). |
 
 ---
@@ -211,10 +220,10 @@ This document records major engineering decisions inferred from the repository: 
 
 | | |
 | --- | --- |
-| **Chosen** | `docker-compose.yml` with MySQL 8.4 and the Spring Boot app; multi-stage `Dockerfile` (`maven:3.9-eclipse-temurin-21-alpine` build → `eclipse-temurin:21-jre-alpine` runtime) |
-| **Why** | Added in the July rewrite (`4347f08`). Compose wires JDBC credentials and JWT env vars; MySQL health check gates app startup. Build stage uses system Maven (not `mvnw`) because `.mvn/` is absent from the repository. |
+| **Chosen** | `docker-compose.yml` with PostgreSQL 16 and the Spring Boot app; multi-stage `Dockerfile` (`maven:3.9-eclipse-temurin-21-alpine` build → `eclipse-temurin:21-jre-alpine` runtime) |
+| **Why** | Compose wires JDBC credentials and JWT env vars; PostgreSQL health check gates app startup. Build stage uses system Maven (not `mvnw`) because `.mvn/` is absent from the repository. |
 | **Alternatives** | Single-container image with embedded H2 (not chosen for production-like setup). Kubernetes manifests — not present. Running JAR directly without containers (documented as the local dev path). |
-| **Tradeoffs** | **Gain:** reproducible environment, persistent MySQL volume, health-checked startup order. **Cost:** image size and build time exceed a plain `java -jar` workflow; build stage downloads Maven dependencies on first build. |
+| **Tradeoffs** | **Gain:** reproducible environment, persistent PostgreSQL volume, health-checked startup order. **Cost:** image size and build time exceed a plain `java -jar` workflow; build stage downloads Maven dependencies on first build. |
 
 ---
 
@@ -235,8 +244,8 @@ This document records major engineering decisions inferred from the repository: 
 | --- | --- |
 | **Chosen** | 25 tests: unit tests with Mockito (`UserServiceTest`, `NoteServiceTest`, `JwtServiceTest`), one integration test class with MockMvc (`NotesApiIntegrationTest`), minimal `NoteAppApplicationTests` |
 | **Why** | Test suite added in the July rewrite (`4347f08`). Integration tests use H2 via the `test` profile. The original app had only a `@SpringBootTest` context-load test. |
-| **Alternatives** | Full end-to-end tests against MySQL (not implemented). `@WebMvcTest` slice tests per controller — not used. |
-| **Tradeoffs** | **Gain:** core auth and note lifecycle verified; fast H2-backed integration tests. **Cost:** gaps in HTTP-level coverage for pagination, search, sorting, and 409 responses; H2 may not catch MySQL-specific SQL issues. |
+| **Alternatives** | Full end-to-end tests against PostgreSQL (not implemented). `@WebMvcTest` slice tests per controller — not used. |
+| **Tradeoffs** | **Gain:** core auth and note lifecycle verified; fast H2-backed integration tests. **Cost:** gaps in HTTP-level coverage for pagination, search, sorting, and 409 responses; H2 may not catch PostgreSQL-specific SQL issues. |
 
 ---
 
@@ -247,10 +256,10 @@ This document records major engineering decisions inferred from the repository: 
 | Refresh tokens | Listed in README roadmap; no implementation in `security/` |
 | Role-based access control | `CustomUserDetails.getAuthorities()` returns empty list |
 | Database migrations (Flyway/Liquibase) | No dependency or migration files |
-| CORS configuration | No `CorsConfiguration` bean or `WebMvcConfigurer` |
+| CORS configuration | Not required for the built-in same-origin UI; no `CorsConfiguration` bean for external SPAs |
 | Spring Actuator | No `spring-boot-starter-actuator` dependency |
-| Lombok usage | Declared in `pom.xml`, zero annotations in `src/main` |
-| PostgreSQL (current) | Driver in `pom.xml`, no active configuration profile |
+| Lombok | Removed from `pom.xml` (was unused) |
+| MySQL | Superseded; driver removed from `pom.xml` |
 | CI/CD pipeline | No `.github/workflows`, Jenkinsfile, or similar |
 | LICENSE | No `LICENSE` file in the repository |
 
@@ -265,3 +274,5 @@ This document records major engineering decisions inferred from the repository: 
 | 2026-07-09 | `4347f08` | JWT auth, MySQL, Java 21, DTOs, mappers, H2 tests, Docker, 25 tests |
 | 2026-07-09 | `39ec22c` | H2 dev profile, POM BOM alignment |
 | 2026-07-09 | `cc27893` | Merge; removed duplicate legacy packages from June history |
+| 2026-07-10 | `11db1ac` | Documentation pass (README, Decisions, SECURITY, docs/) |
+| 2026-07-20 | — | Web UI; PostgreSQL restored as default; MySQL/Lombok deps removed |

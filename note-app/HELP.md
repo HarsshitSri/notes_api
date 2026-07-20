@@ -19,7 +19,7 @@ From this directory (`note-app/`):
 # H2 in-memory database (no external DB required)
 mvn spring-boot:run -Dspring-boot.run.profiles=h2
 
-# MySQL (default profile — requires a running MySQL instance)
+# PostgreSQL (default profile — requires a running PostgreSQL instance)
 mvn spring-boot:run
 ```
 

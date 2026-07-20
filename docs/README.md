@@ -36,7 +36,7 @@ Supplementary documentation for the [Notes API](../README.md) project. The root 
 | Project README | [README.md](../README.md) | Overview, features, architecture, database, auth, full API reference, env vars, Docker, testing, roadmap |
 | Technical decisions | [Decisions.md](../Decisions.md) | 20 ADR-style records with alternatives, tradeoffs, and Git-history evidence |
 | Security policy | [SECURITY.md](../SECURITY.md) | Vulnerability reporting; production warnings (JWT secret, credentials) |
-| Module help | [note-app/HELP.md](../note-app/HELP.md) | Java 21 / Maven requirements, `h2` vs MySQL run commands, Spring reference links |
+| Module help | [note-app/HELP.md](../note-app/HELP.md) | Java 21 / Maven requirements, `h2` vs PostgreSQL run commands, Spring reference links |
 
 ---
 
@@ -64,7 +64,7 @@ Supplementary documentation for the [Notes API](../README.md) project. The root 
 
 ### Deployment and configuration
 
-- Local run (H2 / MySQL): [README § Running Locally](../README.md#running-locally)
+- Local run (H2 / PostgreSQL): [README § Running Locally](../README.md#running-locally)
 - Environment variables: [README § Environment Variables](../README.md#environment-variables)
 - Docker Compose: [README § Docker Instructions](../README.md#docker-instructions)
 - Security policy (vulnerability reporting, JWT secret warnings): [SECURITY.md](../SECURITY.md)

@@ -1,23 +1,22 @@
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: notes-mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: notes-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-notes_db}
-      MYSQL_USER: ${MYSQL_USER:-notes_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-notes_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-notes_db}
+      POSTGRES_USER: ${POSTGRES_USER:-notes_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-notes_pass}
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-notes_user} -d ${POSTGRES_DB:-notes_db}"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 20s
 
   app:
     build:
@@ -28,14 +27,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-notes_db}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-notes_user}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-notes_pass}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-notes_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-notes_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-notes_pass}
       JWT_SECRET: ${JWT_SECRET:-this-is-a-very-long-secret-key-for-jwt-signing-32chars-min}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
 volumes:
-  mysql_data:
+  postgres_data:

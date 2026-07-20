@@ -2,10 +2,11 @@
 
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Tests](https://img.shields.io/badge/Tests-25-blue)](#testing)
 [![License](https://img.shields.io/badge/License-TBD-lightgrey)](#license)
 
-A REST backend for user registration, JWT-based authentication, and per-user note management. Built with Spring Boot and Spring Data JPA.
+A REST API for user registration, JWT authentication, and per-user note management — with a simple built-in web UI. Built with Spring Boot, Spring Security, and PostgreSQL.
 
 **Repository:** [github.com/HarsshitSri/notes_api](https://github.com/HarsshitSri/notes_api)
 
@@ -37,6 +38,7 @@ A REST backend for user registration, JWT-based authentication, and per-user not
   - [PUT `/api/notes/{id}`](#put-apinotesid)
   - [DELETE `/api/notes/{id}`](#delete-apinotesid)
   - [Endpoint summary](#endpoint-summary)
+- [Web UI](#web-ui)
 - [Getting Started](#getting-started)
 - [Running Locally](#running-locally)
 - [Environment Variables](#environment-variables)
@@ -56,7 +58,7 @@ This README is the primary entry point. Supplementary documentation is indexed i
 | Document | Description |
 | -------- | ----------- |
 | [docs/README.md](docs/README.md) | **Documentation index** — entry point for all supplementary docs |
-| [Decisions.md](Decisions.md) | Technical decision record — alternatives, tradeoffs, and Git-history evidence for major choices (JWT, MySQL, DTOs, testing, Docker, etc.) |
+| [Decisions.md](Decisions.md) | Technical decision record — alternatives, tradeoffs, and Git-history evidence for major choices (JWT, PostgreSQL, DTOs, testing, Docker, etc.) |
 | [docs/packages.md](docs/packages.md) | Per-package responsibilities under `com.Harshit.note_app` (`controller`, `service`, `security`, and others) |
 | [docs/project-tree.md](docs/project-tree.md) | Full repository tree with directory responsibilities and notes on legacy empty folders |
 | [docs/diagram-audit.md](docs/diagram-audit.md) | Architecture and database diagram accuracy review against the current implementation |
@@ -70,7 +72,9 @@ This README is the primary entry point. Supplementary documentation is indexed i
 
 ## Project Overview
 
-Notes API is a stateless REST service that lets registered users create, read, update, and delete their own notes. Authentication is handled with JSON Web Tokens (JWT). Notes support keyword search, pagination, and sorting.
+Notes API is a stateless REST service that lets registered users create, read, update, and delete their own notes. Authentication uses JSON Web Tokens (JWT). Notes support keyword search, pagination, and sorting.
+
+A lightweight HTML/CSS/JS client is served at `/` so you can exercise every feature without a separate frontend project. Interactive API docs are available via Swagger UI.
 
 The application follows a layered design: controllers handle HTTP and use DTOs, services contain business logic, mappers translate between DTOs and entities, repositories manage persistence, and `model` holds JPA entities. See [Architecture Overview](#architecture-overview) for request flows and layer dependencies.
 
@@ -84,6 +88,7 @@ This project was built to practice backend fundamentals in a realistic setting:
 - Securing endpoints with Spring Security and JWT
 - Scoping data access so users can only interact with their own notes
 - Using JPA relationships, pagination, and custom queries
+- Serving a same-origin web client for end-to-end demos
 - Documenting the API with OpenAPI and testing core flows with unit and integration tests
 
 ---
@@ -92,6 +97,7 @@ This project was built to practice backend fundamentals in a realistic setting:
 
 | Feature | Description |
 | ------- | ----------- |
+| Basic web UI | Static HTML/CSS/JS client at `/` for register, login, and note CRUD |
 | User registration | Create an account with unique username and email |
 | User login | Authenticate with email and password; receive a JWT |
 | Note CRUD | Create, read, update, and delete notes owned by the authenticated user |
@@ -112,11 +118,12 @@ This project was built to practice backend fundamentals in a realistic setting:
 | Auth (register, login, JWT) | Complete |
 | Note CRUD with user scoping | Complete |
 | Search, pagination, sorting | Complete |
-| MySQL configuration (default profile) | Complete |
-| H2 profile for local development | Complete |
+| Basic web UI (HTML/CSS/JS) | Complete |
+| PostgreSQL configuration (default profile) | Complete |
+| H2 profile for local development / tests | Complete |
 | Unit and integration tests (25 tests) | Complete |
-| Docker Compose configuration | Complete — multi-stage build uses Maven in the image (see [Docker Instructions](#docker-instructions)) |
-| Maven Wrapper (`.mvn/`) | Missing from repository — local dev uses system `mvn`; Docker build does not require the wrapper |
+| Docker Compose (app + PostgreSQL 16) | Complete |
+| Maven Wrapper (`.mvn/`) | Missing — use system `mvn` locally; Docker build uses Maven in-image |
 | License file | Not added yet |
 | Refresh tokens, roles, rate limiting | Planned (not implemented) |
 
@@ -134,12 +141,11 @@ This project was built to practice backend fundamentals in a realistic setting:
 | JWT | jjwt | 0.12.6 |
 | API docs | SpringDoc OpenAPI | 3.0.2 |
 | Validation | Spring Validation | (managed by Boot) |
-| Databases | MySQL, H2 | Connector 9.7.0 / H2 2.4.240 |
+| Databases | PostgreSQL 16 (default), H2 (dev/test) | PostgreSQL driver / H2 2.4.240 |
 | Build | Maven | 3.8+ |
 | Testing | JUnit 5, Mockito | 6.0.3 / 5.23.0 |
-| Container | Docker, Docker Compose | MySQL 8.4 image; Temurin JDK/JRE 21 Alpine |
-
-> A PostgreSQL driver is declared in `pom.xml` but no application profile or configuration uses it.
+| Frontend | Static HTML / CSS / JS | Served from `classpath:/static/` |
+| Container | Docker, Docker Compose | `postgres:16-alpine`; Temurin JRE 21 Alpine |
 
 ---
 
@@ -182,7 +188,11 @@ notes_api/
         │   │   └── NoteAppApplication.java
         │   └── resources/
         │       ├── application.properties
-        │       └── application-h2.properties
+        │       ├── application-h2.properties
+        │       └── static/
+        │           ├── index.html
+        │           ├── css/styles.css
+        │           └── js/app.js
         └── test/
             ├── java/com/Harshit/note_app/
             │   ├── NotesApiIntegrationTest.java
@@ -382,7 +392,7 @@ Passwords are stored as BCrypt hashes. The `password` field is excluded from JSO
 
 | Profile | Database | DDL | Config file |
 | ------- | -------- | --- | ----------- |
-| *(default)* | MySQL | `update` | `application.properties` |
+| *(default)* | PostgreSQL | `update` | `application.properties` |
 | `h2` | H2 in-memory (`notes_db`) | `update` | `application-h2.properties` |
 | `test` | H2 in-memory (`notes_test`) | `create-drop` | `application-test.properties` |
 
@@ -502,6 +512,7 @@ Configured explicitly in `SecurityConfig`:
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `/`, `/index.html`, `/css/**`, `/js/**`, `/favicon.ico` (basic web UI)
 - `/swagger-ui.html`, `/swagger-ui/**`
 - `/v3/api-docs/**`
 
@@ -915,28 +926,63 @@ Interactive documentation: [Swagger UI](http://localhost:8080/swagger-ui.html) (
 
 ---
 
+## Web UI
+
+A same-origin static client lives under `note-app/src/main/resources/static/` and is served at **http://localhost:8080/**.
+
+| Capability | UI support |
+| ---------- | ---------- |
+| Register / log in | Auth panel with tabs |
+| Create / update / delete notes | Editor panel |
+| List notes | Sidebar |
+| Search, sort, pagination | Toolbar controls |
+| Log out | Session bar |
+
+The browser stores the JWT in `localStorage` and sends `Authorization: Bearer <token>` on note requests. No separate CORS setup is required for this built-in UI.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
 
 - **Java 21** (JDK)
-- **Maven 3.8+** (system Maven; the `.mvn/` wrapper directory is missing from this repository)
-- **MySQL 8+** (for the default profile) or the `h2` profile
+- **Maven 3.8+** (system install — `.mvn/` wrapper files are not in this repo)
+- **Docker Desktop / Docker Engine** (recommended) **or** a local PostgreSQL 16+ instance
+- Optional: use the `h2` profile to skip PostgreSQL entirely
 
-### Clone the repository
+### Clone
 
 ```bash
-git clone git@github.com:HarsshitSri/notes_api.git
+git clone https://github.com/HarsshitSri/notes_api.git
+# or: git clone git@github.com:HarsshitSri/notes_api.git
 cd notes_api
 ```
 
-All application commands below run from the `note-app/` module directory.
+### Quick start (Docker Compose)
+
+```bash
+cp .env.example .env    # optional
+docker compose up --build
+```
+
+Then open:
+
+| Resource | URL |
+| -------- | --- |
+| Web UI | http://localhost:8080/ |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+
+Default DB credentials match `.env.example` (`notes_user` / `notes_pass`, database `notes_db`). Change `JWT_SECRET` before any shared deployment — see [SECURITY.md](SECURITY.md).
 
 ---
 
 ## Running Locally
 
-### Option A — H2 (no external database)
+Application commands below run from `note-app/` unless noted.
+
+### Option A — H2 (fastest, no external database)
 
 ```bash
 cd note-app
@@ -945,21 +991,32 @@ mvn spring-boot:run -Dspring-boot.run.profiles=h2
 
 | Resource | URL |
 | -------- | --- |
-| API | http://localhost:8080 |
+| Web UI | http://localhost:8080/ |
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 
-### Option B — MySQL
+### Option B — PostgreSQL (default profile)
 
-1. Start MySQL (or rely on `createDatabaseIfNotExist=true` in the default JDBC URL).
-2. Set environment variables if you are not using the defaults (see [Environment Variables](#environment-variables)).
-3. Run:
+1. Start PostgreSQL 16 with database `notes_db` and user/password matching the defaults, **or** run only the DB container:
+
+```bash
+# from repository root
+docker compose up -d postgres
+```
+
+2. Run the app (default JDBC URL: `jdbc:postgresql://localhost:5432/notes_db`):
 
 ```bash
 cd note-app
 mvn spring-boot:run
 ```
 
-### Example workflow
+If host port **5432** is already in use, remap Compose (e.g. `"5433:5432"`) and set:
+
+```bash
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/notes_db
+```
+
+### Example API workflow
 
 ```bash
 # 1. Register
@@ -979,6 +1036,8 @@ curl -X POST http://localhost:8080/api/notes \
   -d '{"title":"My first note","content":"Hello from Notes API."}'
 ```
 
+Or use the [Web UI](#web-ui) at http://localhost:8080/ instead of curl.
+
 ---
 
 ## Environment Variables
@@ -987,21 +1046,20 @@ curl -X POST http://localhost:8080/api/notes \
 
 | Variable | Maps to | Default |
 | -------- | ------- | ------- |
-| `SPRING_DATASOURCE_URL` | JDBC URL | `jdbc:mysql://localhost:3306/notes_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true` |
+| `SPRING_DATASOURCE_URL` | JDBC URL | `jdbc:postgresql://localhost:5432/notes_db` |
 | `SPRING_DATASOURCE_USERNAME` | DB username | `notes_user` |
 | `SPRING_DATASOURCE_PASSWORD` | DB password | `notes_pass` |
 | `SPRING_JPA_SHOW_SQL` | SQL logging | `false` |
-| `JWT_SECRET` | `jwt.secret` | `this-is-a-very-long-secret-key-for-jwt-signing-32chars-min` |
+| `JWT_SECRET` | `jwt.secret` | Dev default — **override in production** |
 | `JWT_EXPIRATION` | `jwt.expiration` (ms) | `86400000` (24 hours) |
 
 ### Docker Compose (`.env.example`)
 
 | Variable | Description | Default |
 | -------- | ----------- | ------- |
-| `MYSQL_ROOT_PASSWORD` | MySQL root password | `rootpassword` |
-| `MYSQL_DATABASE` | Database name | `notes_db` |
-| `MYSQL_USER` | Application DB user | `notes_user` |
-| `MYSQL_PASSWORD` | Application DB password | `notes_pass` |
+| `POSTGRES_DB` | Database name | `notes_db` |
+| `POSTGRES_USER` | Application DB user | `notes_user` |
+| `POSTGRES_PASSWORD` | Application DB password | `notes_pass` |
 | `JWT_SECRET` | JWT signing secret | Same as application default |
 | `JWT_EXPIRATION` | Token lifetime (ms) | `86400000` |
 
@@ -1016,16 +1074,16 @@ cp .env.example .env   # optional: customize before docker compose up
 `docker-compose.yml` at the repository root defines two services:
 
 ```text
-┌─────────────────────────────┐       ┌─────────────────────────────┐
-│  app (notes-api) :8080      │──────▶│  mysql (notes-mysql) :3306  │
-│  Spring Boot JAR            │ JDBC  │  volume: mysql_data         │
-│  env: SPRING_DATASOURCE_*,  │       │  healthcheck → depends_on   │
-│       JWT_SECRET,           │       │                             │
-│       JWT_EXPIRATION        │       │                             │
-└─────────────────────────────┘       └─────────────────────────────┘
+┌─────────────────────────────┐       ┌──────────────────────────────┐
+│  app (notes-api) :8080      │──────▶│  postgres (notes-postgres)   │
+│  Spring Boot JAR + static UI│ JDBC  │  :5432  volume: postgres_data│
+│  env: SPRING_DATASOURCE_*,  │       │  healthcheck → depends_on    │
+│       JWT_SECRET,           │       │                              │
+│       JWT_EXPIRATION        │       │                              │
+└─────────────────────────────┘       └──────────────────────────────┘
 ```
 
-The `note-app/Dockerfile` uses a **multi-stage build**: `maven:3.9-eclipse-temurin-21-alpine` compiles the JAR with system Maven; `eclipse-temurin:21-jre-alpine` runs it. The Maven Wrapper (`mvnw` / `.mvn/`) is **not** used in the container build — only `pom.xml` and `src/` are copied into the build stage.
+The `note-app/Dockerfile` uses a **multi-stage build**: `maven:3.9-eclipse-temurin-21-alpine` compiles the JAR; `eclipse-temurin:21-jre-alpine` runs it. The Maven Wrapper is not required for the image build.
 
 ### Start
 
@@ -1036,6 +1094,7 @@ docker compose up --build
 
 | Resource | URL |
 | -------- | --- |
+| Web UI | http://localhost:8080/ |
 | API | http://localhost:8080 |
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 
@@ -1055,7 +1114,7 @@ docker compose down -v         # stop and remove database volume
 | `build` | `maven:3.9-eclipse-temurin-21-alpine` | `mvn -DskipTests package` |
 | runtime | `eclipse-temurin:21-jre-alpine` | `java -jar app.jar` on port 8080 |
 
-MySQL must become healthy before the app container starts (`depends_on: service_healthy`). Override `JWT_SECRET` and database credentials via `.env` before any shared deployment — see [SECURITY.md](SECURITY.md).
+PostgreSQL must become healthy before the app container starts (`depends_on: service_healthy`). Override `JWT_SECRET` and database credentials via `.env` before any shared deployment — see [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -1099,7 +1158,10 @@ Controller methods include `@Operation` and `@ApiResponses` annotations. The Ope
 
 ## Screenshots
 
-> These images were captured during earlier development, before JWT authentication was added. They do not show the `Authorization` header, and some response shapes differ from the current API. Refer to [API Overview](#api-overview) for current behavior.
+> **Historical only.** These images were captured before JWT auth and the current response shapes. Prefer the [Web UI](#web-ui), [Swagger UI](http://localhost:8080/swagger-ui.html), or [API Overview](#api-overview) for current behavior.
+
+<details>
+<summary>Show outdated Postman screenshots</summary>
 
 | Image | What it shows | Differs from current API |
 | ----- | ------------- | ------------------------ |
@@ -1108,21 +1170,15 @@ Controller methods include `@Operation` and `@ApiResponses` annotations. The Ope
 | `pagination-and-sorting.png` | Paginated list with query params | Largely consistent with current pagination |
 | `validation.png` | Validation error on empty fields | Shows per-field JSON map; current API returns `ApiErrorResponse` |
 
-### Create Note
-
 ![Create Note](images/create-note.png)
-
-### Retrieve All Notes
 
 ![Retrieve All Notes](images/get-all-notes.png)
 
-### Pagination & Sorting
-
 ![Pagination and sorting](images/pagination-and-sorting.png)
 
-### Validation Error
-
 ![Validation error](images/validation.png)
+
+</details>
 
 ---
 
@@ -1138,8 +1194,7 @@ Controller methods include `@Operation` and `@ApiResponses` annotations. The Ope
 | Rate limiting | Planned |
 | Database migrations (Flyway or Liquibase) | Planned |
 | Role-based access control | Planned |
-| CORS configuration for frontend clients | Planned |
-| Update screenshots to reflect JWT auth and current response formats | Planned |
+| Replace outdated API screenshots | Planned |
 
 ---
 
@@ -1153,7 +1208,9 @@ Working on this project covered:
 - Writing JPQL queries for search and combining them with Spring Data pagination
 - Centralizing API error handling with `@RestControllerAdvice` and a consistent error DTO
 - Documenting REST endpoints with SpringDoc OpenAPI annotations
+- Serving a same-origin static web client for demos
 - Writing unit tests with Mockito and integration tests with `@SpringBootTest` and MockMvc
+- Packaging the stack with Docker Compose (Spring Boot + PostgreSQL)
 
 ---
 

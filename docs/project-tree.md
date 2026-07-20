@@ -1,6 +1,6 @@
 # Project Tree
 
-Accurate layout of the `notes_api` repository. Excludes `target/`, `.git/`, `.idea/`, and empty directories.
+Accurate layout of the `notes_api` repository. Excludes `target/`, `.git/`, and IDE folders.
 
 ```text
 notes_api/
@@ -43,7 +43,11 @@ notes_api/
         │   │   └── service/
         │   └── resources/
         │       ├── application.properties
-        │       └── application-h2.properties
+        │       ├── application-h2.properties
+        │       └── static/
+        │           ├── index.html
+        │           ├── css/styles.css
+        │           └── js/app.js
         └── test/
             ├── java/com/Harshit/note_app/
             │   ├── security/
@@ -58,14 +62,14 @@ notes_api/
 
 | Path | Responsibility |
 | ---- | -------------- |
-| `README.md` | Primary project documentation: setup, API reference, architecture |
+| `README.md` | Primary project documentation: setup, API reference, architecture, web UI |
 | `Decisions.md` | Record of major technical decisions and tradeoffs |
 | `SECURITY.md` | Security policy — vulnerability reporting and deployment warnings |
-| `docker-compose.yml` | Orchestrates MySQL and the Spring Boot application for containerized runs |
+| `docker-compose.yml` | Orchestrates PostgreSQL and the Spring Boot application for containerized runs |
 | `.env.example` | Template for Docker Compose environment variables (database credentials, JWT settings) |
 | `.gitignore` | Excludes build output, IDE files, and local secrets from version control |
-| `docs/` | Supplementary documentation — start at [`docs/README.md`](README.md) (`packages.md`, `assets-plan.md`, `diagram-audit.md`, `project-tree.md`) |
-| `images/` | API screenshots used in the README |
+| `docs/` | Supplementary documentation — start at [`docs/README.md`](README.md) |
+| `images/` | Historical API screenshots (outdated; see README disclaimer) |
 | `note-app/` | Spring Boot application module (source, build config, container image) |
 
 ### `note-app/`
@@ -74,7 +78,7 @@ notes_api/
 | ---- | -------------- |
 | `pom.xml` | Maven build definition, dependencies, and Java 21 compiler settings |
 | `mvnw`, `mvnw.cmd` | Maven Wrapper scripts (`.mvn/` wrapper files are not present in the repo) |
-| `Dockerfile` | Multi-stage image build: `maven:3.9-eclipse-temurin-21-alpine` compiles with system Maven, `eclipse-temurin:21-jre-alpine` runs the JAR |
+| `Dockerfile` | Multi-stage image build: Maven compile → JRE 21 Alpine runtime |
 | `.dockerignore` | Files excluded from the Docker build context |
 | `HELP.md` | Module-level getting started and Spring reference links |
 
@@ -91,8 +95,9 @@ notes_api/
 | `java/.../repository/` | Spring Data JPA repositories |
 | `java/.../security/` | JWT filter, security config, authentication provider |
 | `java/.../service/` | Business logic (`UserService`, `NoteService`) |
-| `resources/application.properties` | Default configuration (MySQL, JWT) |
+| `resources/application.properties` | Default configuration (PostgreSQL, JWT) |
 | `resources/application-h2.properties` | H2 in-memory profile for local development |
+| `resources/static/` | Built-in web UI (`index.html`, CSS, JS) |
 
 ### `note-app/src/test/`
 
@@ -102,15 +107,3 @@ notes_api/
 | `java/.../service/` | Unit tests for `UserService` and `NoteService` |
 | `java/.../` (root) | `NotesApiIntegrationTest`, `NoteAppApplicationTests` |
 | `resources/application-test.properties` | H2 test profile (`create-drop` DDL) |
-
-## Empty directories (excluded from tree)
-
-The following folders exist on disk but contain no files — leftovers from the June 2026 package layout merge:
-
-- `note-app/src/main/java/com/Harshit/note_app/Controller/`
-- `note-app/src/main/java/com/Harshit/note_app/Exception/`
-- `note-app/src/main/java/com/Harshit/note_app/Model/`
-- `note-app/src/main/java/com/Harshit/note_app/Repository/`
-- `note-app/src/main/java/com/Harshit/note_app/Service/`
-
-These can be safely deleted; they are not part of the active codebase.

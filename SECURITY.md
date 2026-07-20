@@ -70,7 +70,7 @@ JWT_SECRET=<your-generated-secret>
 
 ### Default database credentials
 
-Default MySQL credentials (`notes_user` / `notes_pass`, root password `rootpassword` in Compose) are for local development only. Override `SPRING_DATASOURCE_*` and `MYSQL_*` variables for any shared or production deployment.
+Default PostgreSQL credentials (`notes_user` / `notes_pass` in Compose) are for local development only. Override `SPRING_DATASOURCE_*` and `POSTGRES_*` variables for any shared or production deployment.
 
 ### Other security characteristics
 
