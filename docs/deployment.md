@@ -54,6 +54,16 @@ Prefer Neon’s **pooled** host for serverless-friendly connection limits when a
 4. Deploy and copy the public HTTPS URL, e.g. `https://notes-api-production.up.railway.app` (no trailing slash).
 5. Confirm health: open `/swagger-ui.html` or `POST /api/auth/register`.
 
+### If the service crashes after ~1 minute
+
+1. Open Railway → service → latest deployment → **View logs**.
+2. Look for:
+   - `OutOfMemoryError` / `Killed` → memory (Dockerfile already sets `-Xmx256m`; raise Railway memory or keep heap low)
+   - `Connection refused` / `FATAL: password authentication` / `ssl` → Neon URL/user/password wrong, or missing `sslmode=require`
+   - `Failed to configure a DataSource` → `SPRING_DATASOURCE_*` variables not set on the Railway service
+3. Confirm **Variables** are on the **same service** that runs the Dockerfile (not only at project level without sharing).
+4. Redeploy after fixing.
+
 ---
 
 ## 3. Vercel (frontend)

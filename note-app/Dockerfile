@@ -15,4 +15,7 @@ COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Keep heap small for Railway trial / low-memory containers
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=60.0 -Xms64m -Xmx256m"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
