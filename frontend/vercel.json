@@ -1,0 +1,7 @@
+{
+  "buildCommand": "node write-config.js",
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

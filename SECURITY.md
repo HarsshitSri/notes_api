@@ -72,6 +72,16 @@ JWT_SECRET=<your-generated-secret>
 
 Default PostgreSQL credentials (`notes_user` / `notes_pass` in Compose) are for local development only. Override `SPRING_DATASOURCE_*` and `POSTGRES_*` variables for any shared or production deployment.
 
+### CORS (cross-origin UI)
+
+When the UI runs on Vercel and the API on Railway, browsers enforce CORS. Set:
+
+```text
+CORS_ALLOWED_ORIGINS=https://your-app.vercel.app
+```
+
+Do not use `*` with credentialed flows; this API uses Bearer tokens and lists explicit origins. See [docs/deployment.md](docs/deployment.md).
+
 ### Other security characteristics
 
 | Topic | Current behavior |
@@ -79,7 +89,7 @@ Default PostgreSQL credentials (`notes_user` / `notes_pass` in Compose) are for 
 | Token revocation | Not implemented — stolen tokens remain valid until expiry (`JWT_EXPIRATION`, default 24h) |
 | Refresh tokens | Not implemented |
 | Rate limiting | Not implemented |
-| CORS | Not configured — review before exposing to browser clients on other origins |
+| CORS | `CORS_ALLOWED_ORIGINS` (comma-separated); empty → localhost patterns only |
 | CSRF | Disabled (stateless Bearer-token API) |
 | Roles / RBAC | Not implemented — all authenticated users have equal access |
 | Actuator / health | Spring Actuator not enabled |
@@ -98,7 +108,8 @@ Security fixes are applied on the **`main`** branch. There are no versioned rele
 
 | Document | Topic |
 | -------- | ----- |
-| [README § Environment Variables](README.md#environment-variables) | `JWT_SECRET`, `JWT_EXPIRATION`, database config |
+| [README § Environment Variables](README.md#environment-variables) | `JWT_SECRET`, `JWT_EXPIRATION`, database config, CORS |
+| [docs/deployment.md](docs/deployment.md) | Neon + Railway + Vercel production setup |
 | [README § Authentication Overview](README.md#authentication-overview) | JWT usage, public vs protected routes |
 | [README § JWT reference](README.md#jwt-reference) | Token header, claims, expiry, no refresh token |
 | [README § Docker Instructions](README.md#docker-instructions) | Container deployment and env vars |

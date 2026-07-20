@@ -108,11 +108,12 @@ Concise reference for each source package under `note-app/src/main/java/com/Hars
 
 **Purpose:** Spring `@Configuration` beans not tied to a domain layer.
 
-**Contains:** `PasswordEncoderConfig` (BCrypt bean), `OpenApiConfig` (Swagger/OpenAPI, Bearer JWT scheme).
+**Contains:** `PasswordEncoderConfig` (BCrypt bean), `OpenApiConfig` (Swagger/OpenAPI, Bearer JWT scheme), `CorsConfig` (allowed origins for Vercel / local split UI).
 
 **Responsibilities:**
 - Register cross-cutting infrastructure beans
 - Define API documentation metadata
+- Configure CORS from `CORS_ALLOWED_ORIGINS`
 
 ---
 

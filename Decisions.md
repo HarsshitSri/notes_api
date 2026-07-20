@@ -256,7 +256,7 @@ This document records major engineering decisions inferred from the repository: 
 | Refresh tokens | Listed in README roadmap; no implementation in `security/` |
 | Role-based access control | `CustomUserDetails.getAuthorities()` returns empty list |
 | Database migrations (Flyway/Liquibase) | No dependency or migration files |
-| CORS configuration | Not required for the built-in same-origin UI; no `CorsConfiguration` bean for external SPAs |
+| CORS configuration | Configurable via `CORS_ALLOWED_ORIGINS` for Vercel; localhost patterns when empty |
 | Spring Actuator | No `spring-boot-starter-actuator` dependency |
 | Lombok | Removed from `pom.xml` (was unused) |
 | MySQL | Superseded; driver removed from `pom.xml` |

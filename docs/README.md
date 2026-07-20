@@ -9,6 +9,7 @@ Supplementary documentation for the [Notes API](../README.md) project. The root 
 | If you want to… | Read |
 | ---------------- | ---- |
 | Run the app, call endpoints, or deploy with Docker | [README](../README.md) — Getting Started, API Overview, Docker Instructions |
+| Deploy to Neon + Railway + Vercel | [deployment.md](deployment.md) |
 | Understand how source packages are organized | [packages.md](packages.md) |
 | See the full repository layout | [project-tree.md](project-tree.md) |
 | Learn why the project is built this way | [Decisions.md](../Decisions.md) |
@@ -23,7 +24,8 @@ Supplementary documentation for the [Notes API](../README.md) project. The root 
 | Document | Audience | Summary |
 | -------- | -------- | ------- |
 | [packages.md](packages.md) | Contributors | Per-package responsibilities (`controller`, `service`, `repository`, `security`, `dto`, `mapper`, `model`, `exception`, `config`) |
-| [project-tree.md](project-tree.md) | Contributors | Repository tree with directory responsibilities; notes on legacy empty folders |
+| [deployment.md](deployment.md) | Operators | Neon (DB), Railway (API), Vercel (UI) production setup |
+| [project-tree.md](project-tree.md) | Contributors | Repository tree with directory responsibilities |
 | [diagram-audit.md](diagram-audit.md) | Maintainers | Architecture and database diagram accuracy review vs. current code |
 | [assets-plan.md](assets-plan.md) | Maintainers / designers | Planned PNG diagrams and screenshots (specs only — assets not yet generated) |
 
@@ -67,6 +69,7 @@ Supplementary documentation for the [Notes API](../README.md) project. The root 
 - Local run (H2 / PostgreSQL): [README § Running Locally](../README.md#running-locally)
 - Environment variables: [README § Environment Variables](../README.md#environment-variables)
 - Docker Compose: [README § Docker Instructions](../README.md#docker-instructions)
+- Production (Neon + Railway + Vercel): [deployment.md](deployment.md)
 - Security policy (vulnerability reporting, JWT secret warnings): [SECURITY.md](../SECURITY.md)
 
 ### Testing

@@ -13,9 +13,18 @@ notes_api/
 ├── docs/
 │   ├── README.md
 │   ├── assets-plan.md
+│   ├── deployment.md
 │   ├── diagram-audit.md
 │   ├── packages.md
 │   └── project-tree.md
+├── frontend/
+│   ├── README.md
+│   ├── config.js
+│   ├── index.html
+│   ├── vercel.json
+│   ├── write-config.js
+│   ├── css/
+│   └── js/
 ├── images/
 │   ├── create-note.png
 │   ├── get-all-notes.png
@@ -69,6 +78,7 @@ notes_api/
 | `.env.example` | Template for Docker Compose environment variables (database credentials, JWT settings) |
 | `.gitignore` | Excludes build output, IDE files, and local secrets from version control |
 | `docs/` | Supplementary documentation — start at [`docs/README.md`](README.md) |
+| `frontend/` | Vercel static UI (`NOTES_API_BASE` → Railway API) |
 | `images/` | Historical API screenshots (outdated; see README disclaimer) |
 | `note-app/` | Spring Boot application module (source, build config, container image) |
 

@@ -3,10 +3,13 @@
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Neon](https://img.shields.io/badge/DB-Neon-00E599?logo=neon&logoColor=white)](https://neon.tech)
+[![Railway](https://img.shields.io/badge/API-Railway-0B0D0E?logo=railway&logoColor=white)](https://railway.app)
+[![Vercel](https://img.shields.io/badge/UI-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 [![Tests](https://img.shields.io/badge/Tests-25-blue)](#testing)
 [![License](https://img.shields.io/badge/License-TBD-lightgrey)](#license)
 
-A REST API for user registration, JWT authentication, and per-user note management — with a simple built-in web UI. Built with Spring Boot, Spring Security, and PostgreSQL.
+A REST API for user registration, JWT authentication, and per-user note management — with a simple web UI. Built with Spring Boot, Spring Security, and PostgreSQL. Intended production layout: **Neon** (DB), **Railway** (API), **Vercel** (UI).
 
 **Repository:** [github.com/HarsshitSri/notes_api](https://github.com/HarsshitSri/notes_api)
 
@@ -43,6 +46,7 @@ A REST API for user registration, JWT authentication, and per-user note manageme
 - [Running Locally](#running-locally)
 - [Environment Variables](#environment-variables)
 - [Docker Instructions](#docker-instructions)
+- [Deploy (Neon + Railway + Vercel)](#deploy-neon--railway--vercel)
 - [Testing](#testing)
 - [Documentation Links](#documentation-links)
 - [Screenshots](#screenshots)
@@ -59,6 +63,7 @@ This README is the primary entry point. Supplementary documentation is indexed i
 | -------- | ----------- |
 | [docs/README.md](docs/README.md) | **Documentation index** — entry point for all supplementary docs |
 | [Decisions.md](Decisions.md) | Technical decision record — alternatives, tradeoffs, and Git-history evidence for major choices (JWT, PostgreSQL, DTOs, testing, Docker, etc.) |
+| [docs/deployment.md](docs/deployment.md) | **Production deploy** — Neon (DB), Railway (API), Vercel (UI) |
 | [docs/packages.md](docs/packages.md) | Per-package responsibilities under `com.Harshit.note_app` (`controller`, `service`, `security`, and others) |
 | [docs/project-tree.md](docs/project-tree.md) | Full repository tree with directory responsibilities and notes on legacy empty folders |
 | [docs/diagram-audit.md](docs/diagram-audit.md) | Architecture and database diagram accuracy review against the current implementation |
@@ -74,7 +79,7 @@ This README is the primary entry point. Supplementary documentation is indexed i
 
 Notes API is a stateless REST service that lets registered users create, read, update, and delete their own notes. Authentication uses JSON Web Tokens (JWT). Notes support keyword search, pagination, and sorting.
 
-A lightweight HTML/CSS/JS client is served at `/` so you can exercise every feature without a separate frontend project. Interactive API docs are available via Swagger UI.
+A lightweight HTML/CSS/JS client is included for demos: served at `/` from Spring Boot for local/Docker use, and as a separate [`frontend/`](frontend/) app for **Vercel** in production. Interactive API docs are available via Swagger UI.
 
 The application follows a layered design: controllers handle HTTP and use DTOs, services contain business logic, mappers translate between DTOs and entities, repositories manage persistence, and `model` holds JPA entities. See [Architecture Overview](#architecture-overview) for request flows and layer dependencies.
 
@@ -118,11 +123,12 @@ This project was built to practice backend fundamentals in a realistic setting:
 | Auth (register, login, JWT) | Complete |
 | Note CRUD with user scoping | Complete |
 | Search, pagination, sorting | Complete |
-| Basic web UI (HTML/CSS/JS) | Complete |
+| Basic web UI (HTML/CSS/JS) | Complete — Spring `static/` + `frontend/` for Vercel |
 | PostgreSQL configuration (default profile) | Complete |
 | H2 profile for local development / tests | Complete |
 | Unit and integration tests (25 tests) | Complete |
 | Docker Compose (app + PostgreSQL 16) | Complete |
+| Neon + Railway + Vercel deploy docs | Complete — see [docs/deployment.md](docs/deployment.md) |
 | Maven Wrapper (`.mvn/`) | Missing — use system `mvn` locally; Docker build uses Maven in-image |
 | License file | Not added yet |
 | Refresh tokens, roles, rate limiting | Planned (not implemented) |
@@ -160,10 +166,18 @@ notes_api/
 ├── docker-compose.yml
 ├── docs/
 │   ├── assets-plan.md
+│   ├── deployment.md
 │   ├── diagram-audit.md
 │   ├── packages.md
 │   ├── project-tree.md
 │   └── README.md
+├── frontend/
+│   ├── index.html
+│   ├── config.js
+│   ├── vercel.json
+│   ├── write-config.js
+│   ├── css/
+│   └── js/
 ├── images/
 ├── README.md
 └── note-app/
@@ -928,7 +942,12 @@ Interactive documentation: [Swagger UI](http://localhost:8080/swagger-ui.html) (
 
 ## Web UI
 
-A same-origin static client lives under `note-app/src/main/resources/static/` and is served at **http://localhost:8080/**.
+Two copies of the same client:
+
+| Location | Use |
+| -------- | --- |
+| `note-app/src/main/resources/static/` | Local / Docker — same-origin at **http://localhost:8080/** |
+| [`frontend/`](frontend/) | **Vercel** production UI (set `NOTES_API_BASE` to the Railway API URL) |
 
 | Capability | UI support |
 | ---------- | ---------- |
@@ -938,7 +957,7 @@ A same-origin static client lives under `note-app/src/main/resources/static/` an
 | Search, sort, pagination | Toolbar controls |
 | Log out | Session bar |
 
-The browser stores the JWT in `localStorage` and sends `Authorization: Bearer <token>` on note requests. No separate CORS setup is required for this built-in UI.
+The browser stores the JWT in `localStorage` and sends `Authorization: Bearer <token>` on note requests. Production (Vercel → Railway) requires CORS — see [Deploy](#deploy-neon--railway--vercel).
 
 ---
 
@@ -1046,12 +1065,14 @@ Or use the [Web UI](#web-ui) at http://localhost:8080/ instead of curl.
 
 | Variable | Maps to | Default |
 | -------- | ------- | ------- |
+| `PORT` | `server.port` | `8080` (Railway sets this automatically) |
 | `SPRING_DATASOURCE_URL` | JDBC URL | `jdbc:postgresql://localhost:5432/notes_db` |
 | `SPRING_DATASOURCE_USERNAME` | DB username | `notes_user` |
 | `SPRING_DATASOURCE_PASSWORD` | DB password | `notes_pass` |
 | `SPRING_JPA_SHOW_SQL` | SQL logging | `false` |
 | `JWT_SECRET` | `jwt.secret` | Dev default — **override in production** |
 | `JWT_EXPIRATION` | `jwt.expiration` (ms) | `86400000` (24 hours) |
+| `CORS_ALLOWED_ORIGINS` | `cors.allowed-origins` | Empty → allows `http://localhost:*` / `http://127.0.0.1:*` |
 
 ### Docker Compose (`.env.example`)
 
@@ -1062,6 +1083,7 @@ Or use the [Web UI](#web-ui) at http://localhost:8080/ instead of curl.
 | `POSTGRES_PASSWORD` | Application DB password | `notes_pass` |
 | `JWT_SECRET` | JWT signing secret | Same as application default |
 | `JWT_EXPIRATION` | Token lifetime (ms) | `86400000` |
+| `CORS_ALLOWED_ORIGINS` | Browser origins for split UI (optional locally) | unset |
 
 ```bash
 cp .env.example .env   # optional: customize before docker compose up
@@ -1115,6 +1137,27 @@ docker compose down -v         # stop and remove database volume
 | runtime | `eclipse-temurin:21-jre-alpine` | `java -jar app.jar` on port 8080 |
 
 PostgreSQL must become healthy before the app container starts (`depends_on: service_healthy`). Override `JWT_SECRET` and database credentials via `.env` before any shared deployment — see [SECURITY.md](SECURITY.md).
+
+---
+
+## Deploy (Neon + Railway + Vercel)
+
+Intended production stack:
+
+| Layer | Platform | Artifact |
+| ----- | -------- | -------- |
+| Database | [Neon](https://neon.tech) | PostgreSQL (`sslmode=require`) |
+| API | [Railway](https://railway.app) | `note-app` Dockerfile |
+| UI | [Vercel](https://vercel.com) | `frontend/` static app |
+
+Full step-by-step (JDBC URL, env vars, CORS, troubleshooting): **[docs/deployment.md](docs/deployment.md)**.
+
+Quick outline:
+
+1. Create a Neon database → set `SPRING_DATASOURCE_*` on Railway.
+2. Deploy `note-app` on Railway with a strong `JWT_SECRET`.
+3. Deploy `frontend/` on Vercel with `NOTES_API_BASE=<railway-https-url>`.
+4. Set `CORS_ALLOWED_ORIGINS=<vercel-https-url>` on Railway and redeploy.
 
 ---
 
@@ -1194,6 +1237,8 @@ Controller methods include `@Operation` and `@ApiResponses` annotations. The Ope
 | Rate limiting | Planned |
 | Database migrations (Flyway or Liquibase) | Planned |
 | Role-based access control | Planned |
+| CORS configuration for external SPA | Complete — `CORS_ALLOWED_ORIGINS` |
+| Neon + Railway + Vercel production path | Documented |
 | Replace outdated API screenshots | Planned |
 
 ---
