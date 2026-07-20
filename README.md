@@ -6,15 +6,24 @@
 [![Neon](https://img.shields.io/badge/DB-Neon-00E599?logo=neon&logoColor=white)](https://neon.tech)
 [![Railway](https://img.shields.io/badge/API-Railway-0B0D0E?logo=railway&logoColor=white)](https://railway.app)
 [![Vercel](https://img.shields.io/badge/UI-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
-[![Tests](https://img.shields.io/badge/Tests-25-blue)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-26-blue)](#testing)
 [![License](https://img.shields.io/badge/License-TBD-lightgrey)](#license)
 
-A REST API for user registration, JWT authentication, and per-user note management — with a simple web UI. Built with Spring Boot, Spring Security, and PostgreSQL. Intended production layout: **Neon** (DB), **Railway** (API), **Vercel** (UI).
+A REST API for user registration, JWT authentication, and per-user note management — with a simple web UI. Built with Spring Boot, Spring Security, and PostgreSQL. Production stack: **Neon** (DB), **Railway** (API), **Vercel** (UI).
 
 **Repository:** [github.com/HarsshitSri/notes_api](https://github.com/HarsshitSri/notes_api)
 
+### Live demo
+
+| | URL |
+| - | --- |
+| **Web app** | [https://notes-api-ivory.vercel.app](https://notes-api-ivory.vercel.app) |
+| **API (Swagger)** | [https://notesapi-production-5cfd.up.railway.app/swagger-ui.html](https://notesapi-production-5cfd.up.railway.app/swagger-ui.html) |
+| **API base** | `https://notesapi-production-5cfd.up.railway.app` |
+
 ## Table of Contents
 
+- [Live demo](#live-demo)
 - [Documentation map](#documentation-map)
 - [Project Overview](#project-overview)
 - [Motivation](#motivation)
@@ -126,9 +135,10 @@ This project was built to practice backend fundamentals in a realistic setting:
 | Basic web UI (HTML/CSS/JS) | Complete — Spring `static/` + `frontend/` for Vercel |
 | PostgreSQL configuration (default profile) | Complete |
 | H2 profile for local development / tests | Complete |
-| Unit and integration tests (25 tests) | Complete |
+| Unit and integration tests (26 tests) | Complete |
 | Docker Compose (app + PostgreSQL 16) | Complete |
 | Neon + Railway + Vercel deploy docs | Complete — see [docs/deployment.md](docs/deployment.md) |
+| Production deploy (live) | Complete — [Live demo](#live-demo) |
 | Maven Wrapper (`.mvn/`) | Missing — use system `mvn` locally; Docker build uses Maven in-image |
 | License file | Not added yet |
 | Refresh tokens, roles, rate limiting | Planned (not implemented) |
@@ -947,7 +957,7 @@ Two copies of the same client:
 | Location | Use |
 | -------- | --- |
 | `note-app/src/main/resources/static/` | Local / Docker — same-origin at **http://localhost:8080/** |
-| [`frontend/`](frontend/) | **Vercel** production UI (set `NOTES_API_BASE` to the Railway API URL) |
+| [`frontend/`](frontend/) | **Vercel** production UI — [notes-api-ivory.vercel.app](https://notes-api-ivory.vercel.app) (`NOTES_API_BASE` → Railway) |
 
 | Capability | UI support |
 | ---------- | ---------- |
@@ -1142,22 +1152,24 @@ PostgreSQL must become healthy before the app container starts (`depends_on: ser
 
 ## Deploy (Neon + Railway + Vercel)
 
-Intended production stack:
+This project is deployed on:
 
-| Layer | Platform | Artifact |
-| ----- | -------- | -------- |
-| Database | [Neon](https://neon.tech) | PostgreSQL (`sslmode=require`) |
-| API | [Railway](https://railway.app) | `note-app` Dockerfile |
-| UI | [Vercel](https://vercel.com) | `frontend/` static app |
+| Layer | Platform | Live URL / artifact |
+| ----- | -------- | ------------------- |
+| Database | [Neon](https://neon.tech) | Managed PostgreSQL (`sslmode=require`) |
+| API | [Railway](https://railway.app) | [notesapi-production-5cfd.up.railway.app](https://notesapi-production-5cfd.up.railway.app) (`note-app` Dockerfile) |
+| UI | [Vercel](https://vercel.com) | [notes-api-ivory.vercel.app](https://notes-api-ivory.vercel.app) (`frontend/`) |
+
+Pushing to `main` redeploys the Railway API (GitHub integration). Vercel redeploys when `frontend/` changes (or on manual Redeploy after changing `NOTES_API_BASE`).
 
 Full step-by-step (JDBC URL, env vars, CORS, troubleshooting): **[docs/deployment.md](docs/deployment.md)**.
 
-Quick outline:
+Quick outline (for a fresh deploy of your own fork):
 
-1. Create a Neon database → set `SPRING_DATASOURCE_*` on Railway.
-2. Deploy `note-app` on Railway with a strong `JWT_SECRET`.
-3. Deploy `frontend/` on Vercel with `NOTES_API_BASE=<railway-https-url>`.
-4. Set `CORS_ALLOWED_ORIGINS=<vercel-https-url>` on Railway and redeploy.
+1. Create a Neon database → set `SPRING_DATASOURCE_*` on Railway (not `POSTGRES_*` — those are Compose-only).
+2. Deploy `note-app` on Railway with a strong `JWT_SECRET` (prefer 32+ characters).
+3. Deploy `frontend/` on Vercel with `NOTES_API_BASE=<railway-https-url>` (no trailing slash) and redeploy.
+4. Set `CORS_ALLOWED_ORIGINS=<vercel-https-url>` on Railway (**no** trailing slash) and redeploy.
 
 ---
 
@@ -1175,10 +1187,10 @@ Requires **Java 21**. Integration tests use the `test` profile with an in-memory
 | `NotesApiIntegrationTest` | 5 | Auth + note lifecycle, validation errors, unauthorized access |
 | `UserServiceTest` | 5 | Registration, duplicates, login success/failure |
 | `NoteServiceTest` | 9 | CRUD, search, sorting, ownership, not-found cases |
-| `JwtServiceTest` | 5 | Token generation, validation, expiration |
+| `JwtServiceTest` | 6 | Token generation, validation, expiration, short-secret signing |
 | `NoteAppApplicationTests` | 1 | Application class presence |
 
-**Total: 25 tests**
+**Total: 26 tests**
 
 HTTP-level tests for pagination, search, sorting, and duplicate-registration (`409`) responses are not yet covered.
 
@@ -1188,6 +1200,8 @@ HTTP-level tests for pagination, search, sorting, and duplicate-registration (`4
 
 | Resource | URL |
 | -------- | --- |
+| Web app (production) | https://notes-api-ivory.vercel.app |
+| Swagger UI (production) | https://notesapi-production-5cfd.up.railway.app/swagger-ui.html |
 | Swagger UI (local) | http://localhost:8080/swagger-ui.html |
 | OpenAPI JSON (local) | http://localhost:8080/v3/api-docs |
 | Module help | [note-app/HELP.md](note-app/HELP.md) |
@@ -1238,7 +1252,7 @@ Controller methods include `@Operation` and `@ApiResponses` annotations. The Ope
 | Database migrations (Flyway or Liquibase) | Planned |
 | Role-based access control | Planned |
 | CORS configuration for external SPA | Complete — `CORS_ALLOWED_ORIGINS` |
-| Neon + Railway + Vercel production path | Documented |
+| Neon + Railway + Vercel production path | Complete — live ([demo](#live-demo)) |
 | Replace outdated API screenshots | Planned |
 
 ---

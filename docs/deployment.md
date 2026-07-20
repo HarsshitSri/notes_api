@@ -6,6 +6,14 @@ Production layout for Notes API:
 Browser → Vercel (frontend/) → Railway (Spring Boot API) → Neon (PostgreSQL)
 ```
 
+### Live instance
+
+| | URL |
+| - | --- |
+| UI | https://notes-api-ivory.vercel.app |
+| API | https://notesapi-production-5cfd.up.railway.app |
+| Swagger | https://notesapi-production-5cfd.up.railway.app/swagger-ui.html |
+
 Local Docker Compose (app + Postgres, same-origin UI) remains available for development. See the root [README](../README.md).
 
 ---
