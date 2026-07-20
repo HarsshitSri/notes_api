@@ -19,7 +19,7 @@ public class User {
     private String email;
 
     @JsonIgnore
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String password;
 
     private LocalDateTime createdAt;

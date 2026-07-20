@@ -76,6 +76,15 @@ public class GlobalExceptionHandler implements AuthenticationEntryPoint, AccessD
         return buildResponse(HttpStatus.FORBIDDEN, "Access denied", request.getRequestURI());
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleUnexpected(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        String message = ex.getMessage() != null ? ex.getMessage() : "Unexpected server error";
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, request.getRequestURI());
+    }
+
     @Override
     public void commence(
             HttpServletRequest request,

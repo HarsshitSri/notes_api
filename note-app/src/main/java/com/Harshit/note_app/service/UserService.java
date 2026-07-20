@@ -11,9 +11,7 @@ import com.Harshit.note_app.dto.UserResponseDTO;
 import com.Harshit.note_app.mapper.UserMapper;
 import com.Harshit.note_app.security.CustomUserDetails;
 import com.Harshit.note_app.security.JwtService;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,49 +21,50 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
     public UserService(
             UserRepository userRepository,
             UserMapper userMapper,
             PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager,
             JwtService jwtService
     ) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
     }
 
     public UserResponseDTO register(UserRegisterRequestDTO requestDTO) {
+        String email = normalizeEmail(requestDTO.getEmail());
         if (userRepository.existsByUsername(requestDTO.getUsername())) {
             throw new DuplicateUsernameException();
         }
-        if (userRepository.existsByEmail(requestDTO.getEmail())) {
+        if (userRepository.existsByEmail(email)) {
             throw new DuplicateEmailException();
         }
 
         User user = userMapper.toEntity(requestDTO);
+        user.setEmail(email);
         user.setPassword(passwordEncoder.encode(requestDTO.getPassword()));
 
         return userMapper.toResponseDTO(userRepository.save(user));
     }
 
     public UserLoginResponseDTO login(UserLoginRequestDTO requestDTO) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        requestDTO.getEmail(),
-                        requestDTO.getPassword()
-                )
-        );
+        String email = normalizeEmail(requestDTO.getEmail());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        User user = userDetails.getUser();
-        String token = jwtService.generateToken(userDetails);
+        if (!passwordEncoder.matches(requestDTO.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
 
+        String token = jwtService.generateToken(new CustomUserDetails(user));
         return new UserLoginResponseDTO(token, user.getUsername(), user.getEmail());
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
     }
 }

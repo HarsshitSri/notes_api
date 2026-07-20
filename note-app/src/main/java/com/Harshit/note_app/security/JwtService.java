@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -58,6 +60,13 @@ public class JwtService {
     }
 
     private SecretKey getSignKey() {
-        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        // Always derive a 256-bit key so short JWT_SECRET values (common on Railway) still work.
+        try {
+            byte[] keyBytes = MessageDigest.getInstance("SHA-256")
+                    .digest(secretKey.getBytes(StandardCharsets.UTF_8));
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 not available", ex);
+        }
     }
 }

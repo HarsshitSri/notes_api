@@ -73,4 +73,14 @@ class JwtServiceTest {
 
         assertThrows(ExpiredJwtException.class, () -> expiredJwtService.isTokenValid(token, userDetails));
     }
+
+    @Test
+    void generateToken_worksWithShortSecret() {
+        // Railway secrets are sometimes short; signing must still produce a valid HMAC key.
+        JwtService shortSecretService = new JwtService("short", 3_600_000L);
+        String token = shortSecretService.generateToken(userDetails);
+
+        assertEquals("jane@example.com", shortSecretService.extractUsername(token));
+        assertTrue(shortSecretService.isTokenValid(token, userDetails));
+    }
 }

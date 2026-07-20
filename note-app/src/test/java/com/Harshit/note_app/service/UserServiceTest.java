@@ -13,17 +13,14 @@ import com.Harshit.note_app.security.CustomUserDetails;
 import com.Harshit.note_app.security.JwtService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,9 +42,6 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private AuthenticationManager authenticationManager;
-
-    @Mock
     private JwtService jwtService;
 
     @InjectMocks
@@ -56,7 +50,7 @@ class UserServiceTest {
     @Test
     void register_savesEncodedUserAndReturnsResponse() {
         // Verifies the happy path: unique username/email, password hashing, persistence, and DTO mapping.
-        UserRegisterRequestDTO request = new UserRegisterRequestDTO("jane", "jane@example.com", "secret12");
+        UserRegisterRequestDTO request = new UserRegisterRequestDTO("jane", "Jane@Example.com", "secret12");
         User user = new User();
         User savedUser = new User();
         savedUser.setId(1L);
@@ -75,6 +69,7 @@ class UserServiceTest {
         UserResponseDTO result = userService.register(request);
 
         assertEquals(responseDTO, result);
+        assertEquals("jane@example.com", user.getEmail());
         assertEquals("hashed-password", user.getPassword());
         verify(userRepository).save(user);
     }
@@ -106,37 +101,31 @@ class UserServiceTest {
     @Test
     void login_returnsTokenAndUserDetailsOnSuccess() {
         // Verifies successful authentication produces a JWT and login response with username and email.
-        UserLoginRequestDTO request = new UserLoginRequestDTO("jane@example.com", "secret12");
+        UserLoginRequestDTO request = new UserLoginRequestDTO("Jane@Example.com", "secret12");
         User user = new User();
         user.setUsername("jane");
         user.setEmail("jane@example.com");
-        CustomUserDetails userDetails = new CustomUserDetails(user);
-        Authentication authentication = org.mockito.Mockito.mock(Authentication.class);
+        user.setPassword("hashed-password");
 
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(userDetails);
-        when(jwtService.generateToken(userDetails)).thenReturn("jwt-token");
+        when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret12", "hashed-password")).thenReturn(true);
+        when(jwtService.generateToken(any(CustomUserDetails.class))).thenReturn("jwt-token");
 
         UserLoginResponseDTO response = userService.login(request);
 
         assertEquals("jwt-token", response.getToken());
         assertEquals("jane", response.getUsername());
         assertEquals("jane@example.com", response.getEmail());
-
-        ArgumentCaptor<UsernamePasswordAuthenticationToken> captor =
-                ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
-        verify(authenticationManager).authenticate(captor.capture());
-        assertEquals("jane@example.com", captor.getValue().getPrincipal());
-        assertEquals("secret12", captor.getValue().getCredentials());
     }
 
     @Test
     void login_propagatesAuthenticationExceptionWhenCredentialsInvalid() {
         // Verifies invalid credentials bubble up as an AuthenticationException for the global handler.
         UserLoginRequestDTO request = new UserLoginRequestDTO("jane@example.com", "wrong");
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Invalid email or password"));
+        User user = new User();
+        user.setPassword("hashed-password");
+        when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "hashed-password")).thenReturn(false);
 
         assertThrows(BadCredentialsException.class, () -> userService.login(request));
 
